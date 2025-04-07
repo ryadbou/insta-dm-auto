@@ -3,6 +3,8 @@ const bodyParser = require("body-parser");
 const puppeteer = require("puppeteer-core");
 const chromium = require("chrome-aws-lambda");
 
+console.log("✅ Serveur en cours de démarrage...");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
