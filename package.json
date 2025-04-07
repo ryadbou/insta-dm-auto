@@ -1,0 +1,14 @@
+{
+  "name": "insta-dm-sender",
+  "version": "1.0.0",
+  "description": "Automated Instagram DM sender using Puppeteer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0",
+    "puppeteer": "^20.9.0"
+  }
+}
