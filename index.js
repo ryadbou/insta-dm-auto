@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const puppeteer = require("puppeteer");
+const fs = require("fs");
 
 console.log("✅ Serveur en cours de démarrage...");
 
@@ -27,9 +28,19 @@ app.post("/send-dm", async (req, res) => {
 
   try {
     const page = await browser.newPage();
-    console.log("🟡 Connexion Instagram...");
 
-    // Connexion directe au lien DM
+    // 🟢 CHARGEMENT DES COOKIES
+    const cookiesPath = "cookies.json";
+    if (fs.existsSync(cookiesPath)) {
+      const cookies = JSON.parse(fs.readFileSync(cookiesPath));
+      await page.setCookie(...cookies);
+      console.log("🍪 Cookies chargés !");
+    } else {
+      console.log("⚠️ Aucun fichier de cookies trouvé.");
+    }
+
+    // Navigation vers Instagram
+    console.log("🟡 Connexion Instagram...");
     const dmUrl = `https://www.instagram.com/direct/t/${chatId[username]}`;
     await page.goto(dmUrl, { waitUntil: "networkidle2" });
 
@@ -37,6 +48,7 @@ app.post("/send-dm", async (req, res) => {
     await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
     await page.type('div[role="textbox"]', message);
     await page.keyboard.press("Enter");
+
     console.log("✅ Message envoyé !");
     await browser.close();
     res.json({ success: true });
