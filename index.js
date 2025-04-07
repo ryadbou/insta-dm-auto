@@ -1,7 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const puppeteer = require("puppeteer-core");
-const chromium = require("chrome-aws-lambda");
+const puppeteer = require("puppeteer");
 
 console.log("✅ Serveur en cours de démarrage...");
 
@@ -20,11 +19,10 @@ app.post("/send-dm", async (req, res) => {
     return res.status(400).json({ error: "username and message are required" });
   }
 
-  console.log("🟡 Lancement de Puppeteer Cloud...");
+  console.log("🟡 Lancement de Puppeteer...");
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   try {
