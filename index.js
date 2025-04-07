@@ -1,55 +1,56 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+const express = require("express");
+const bodyParser = require("body-parser");
+const puppeteer = require("puppeteer-core");
+const chromium = require("chrome-aws-lambda");
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(bodyParser.json());
 
 const chatId = {
   "ryad_immo_dubai": "17849593245253246"
 };
 
-const username = "ryad_immo_dubai";
-const message = "Hello 👋 Ceci est un message automatique !";
-
-(async () => {
-  console.log("🟡 Lancement de Puppeteer...");
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
-
-  console.log("🟡 Chargement des cookies...");
-  const cookies = JSON.parse(fs.readFileSync('./cookies.json', 'utf-8'));
-  await page.setCookie(...cookies);
-
-  console.log("🟡 Navigation vers Instagram...");
-  const dmUrl = `https://www.instagram.com/direct/t/${chatId[username]}`;
-  console.log(`➡️ Navigation vers ${dmUrl}`);
-  await page.goto(dmUrl, { waitUntil: 'networkidle2' });
-
-  // 🔧 Fermer le popup "Turn on Notifications"
-  console.log("🟡 Fermeture du popup 'Turn on Notifications' s'il est présent...");
-  try {
-    await page.waitForSelector('div[role="dialog"] button', { timeout: 3000 });
-    const buttons = await page.$$('div[role="dialog"] button');
-    for (const btn of buttons) {
-      const text = await (await btn.getProperty('innerText')).jsonValue();
-      if (text === 'Not Now') {
-        await btn.click();
-        console.log("✅ Popup fermé.");
-        break;
-      }
-    }
-  } catch (err) {
-    console.log("ℹ️ Aucun popup à fermer.");
+app.post("/send-dm", async (req, res) => {
+  const { username, message } = req.body;
+  if (!username || !message) {
+    return res.status(400).json({ error: "username and message are required" });
   }
 
-  // ✏️ Ciblage du vrai champ de texte
-  console.log("🟡 Attente du champ de message...");
+  console.log("🟡 Lancement de Puppeteer Cloud...");
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
+  });
+
   try {
+    const page = await browser.newPage();
+    console.log("🟡 Connexion Instagram...");
+
+    // Connexion directe au lien DM
+    const dmUrl = `https://www.instagram.com/direct/t/${chatId[username]}`;
+    await page.goto(dmUrl, { waitUntil: "networkidle2" });
+
+    console.log("🟡 Attente du champ...");
     await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
     await page.type('div[role="textbox"]', message);
-    await page.keyboard.press('Enter');
+    await page.keyboard.press("Enter");
     console.log("✅ Message envoyé !");
+    await browser.close();
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Champ de message non détecté :", err.message);
+    console.error("❌ Erreur :", err.message);
+    await browser.close();
+    res.status(500).json({ error: err.message });
   }
+});
 
-  // Tu peux laisser le navigateur ouvert ou le fermer automatiquement :
-  // await browser.close();
-})();
+app.get("/", (req, res) => {
+  res.send("✅ Instagram Auto-DM Server Ready");
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Serveur lancé sur http://localhost:${port}`);
+});
